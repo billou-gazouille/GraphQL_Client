@@ -12,41 +12,52 @@ export default function useFetch({ url, options = DEFAULT_OPTIONS, timeout = DEF
     const [error, setError] = useState(null);
 
     const timeoutPromise = (delay) => {
-        return new Promise((resolve) => {
-            setTimeout(() => resolve({ data: null, error: 'Timeout' }), delay);
+        return new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            clearTimeout(timeoutId);
+            reject({ error: 'Timeout' });
+          }, delay);
         });
-    };
+      };
 
     useEffect(() => {
+
         setData(null);
         setError(null);
         setIsPending(true);
+
         const abortController = new AbortController();
+
         const fetchData = () => {
-            return fetch(url, { 
-                ...options, 
-                signal: abortController.signal 
+            return fetch(url, {
+                ...options,
+                signal: abortController.signal,
             })
-            .then(resp => {                 
-                if (!resp.ok) throw { data: null, error: "cannot fetch" };
+            .then((resp) => {
+                if (!resp.ok) throw new Error("Network request failed");
                 return resp.json();
             })
-            .then(data => {
-                return { data, error: null };
-            })
-            .catch(error => {
-                const errorMessage = error instanceof Object ? error.error : "Unknown error";
-                return { data: null, error: errorMessage };
+            .then((data) => ({ data }))
+            .catch((error) => {
+                throw { error: error.message || "Unknown error" };
             });
         };
+
         Promise.race([fetchData(), timeoutPromise(timeout)])
-            .then(({ data, error }) => {
+            .then(({ data }) => {
                 setData(data);
+                setError(null);
+            })
+            .catch(({ error }) => {
                 setError(error);
+            })
+            .finally(() => {
                 setIsPending(false);
             });
-            
-        return () => abortController.abort();
+
+        return () => {
+            abortController.abort();
+        };
     }, [url]);
 
     return { isPending, data, error };

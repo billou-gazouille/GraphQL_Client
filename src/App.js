@@ -4,20 +4,32 @@ import useFetch from './hooks/useFetch';
 
 function App() {
 
+  // const query = `
+  //   query($title: String!) {
+  //     game(title: $title){
+  //       creator {
+  //         name
+  //         gamesPublished {
+  //           title
+  //         }
+  //       }
+  //     }
+  //   }
+  // `;
+
+  //const variables = { title: "Final Fantasy 7 Remake" };
+
+  
   const query = `
-    query($title: String!) {
-      game(title: $title){
-        creator {
-          name
-          gamesPublished {
-            title
-          }
-        }
+    mutation($id: ID!) {
+      deleteGame(id: $id){
+        title
       }
     }
   `;
 
-  const variables = { title: "Final Fantasy 7 Remake" };
+  const variables = { id: "3" };
+
 
   const { isPending, data, error } = useFetch({ 
     url: 'http://localhost:4000',   // graphQL endpoint
@@ -29,18 +41,25 @@ function App() {
     timeout: 5000
   });
 
-  //console.log({ isPending, data, error });
-
-  if (isPending) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
-
   return (
     <div>
-      <h1>Query result</h1>
+      <div>
+        {isPending ? <p>Loading...</p> : <></>}
+      </div>
+      
+      <div>
+        {error ? <p>{error}</p> : <></>}
+      </div>
+      
       { 
         data ?
-          data.data.game.creator.gamesPublished.map((g, i) => 
-            <div key={i}>{g.title}</div>)
+          <div>
+            <h1>Query result</h1>
+            {/* {data.data.game.creator.gamesPublished.map((g, i) => 
+              <div key={i}>{g.title}</div>)} */}
+            {data.data.deleteGame.map((g, i) => 
+              <div key={i}>{g.title}</div>)}
+          </div>
           :
         <></>
       }
